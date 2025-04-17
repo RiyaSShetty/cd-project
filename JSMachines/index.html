@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hypothetical Language Compiler</title>
+  <style>
+    textarea { width: 100%; height: 200px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    pre { background-color: #f0f0f0; padding: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Hypothetical Language Compiler</h1>
+  <textarea id="codeInput" placeholder="Enter code here..."></textarea>
+  <h3>Tokens:</h3>
+  <div id="tokensOutput"></div>
+  <h3>Grammar Rules:</h3>
+  <pre id="grammarOutput"></pre>
+
+  <script>
+    const tokenPatterns = [
+      { type: "BEGIN", regex: /^BEGIN\b/ },
+      { type: "END", regex: /^END\b/ },
+      { type: "PRINT", regex: /^PRINT\b/ },
+      { type: "INTEGER", regex: /^INTEGER\b/ },
+      { type: "REAL", regex: /^REAL\b/ },
+      { type: "STRING", regex: /^STRING\b/ },
+      { type: "FOR", regex: /^FOR\b/ },
+      { type: "TO", regex: /^TO\b/ },
+      { type: "ASSIGN", regex: /^:=/ },
+      { type: "COMMA", regex: /^,/ },
+      { type: "STRING_LITERAL", regex: /^"[^"]*"/ },
+      { type: "REAL_LITERAL", regex: /^-?\d+\.\d+(E-?\d+)?/ },
+      { type: "INTEGER_LITERAL", regex: /^-?\d+/ },
+      { type: "ID", regex: /^(A|B|C|D|E|X|Y|I)\b/ },
+      { type: "WHITESPACE", regex: /^\s+/, ignore: true },
+    ];
+
+    const grammarRules = `Program -> "BEGIN" Statements "END"
+
+Statements -> Statement Statements
+Statements -> ''
+
+Statement -> PrintStmt
+Statement -> Declaration
+Statement -> Assignment
+Statement -> ForLoop
+
+PrintStmt -> "PRINT" STRING_LITERAL
+PrintStmt -> "PRINT" "Strings are [" ID "] and [" ID "]"
+
+Declaration -> Type IdList
+
+Type -> "INTEGER"
+Type -> "REAL"
+Type -> "STRING"
+
+IdList -> ID "," IdList
+IdList -> ID
+
+Assignment -> ID ":=" Value
+
+Value -> INTEGER_LITERAL
+Value -> REAL_LITERAL
+Value -> STRING_LITERAL
+
+ForLoop -> "FOR" ID ":=" INTEGER_LITERAL "TO" INTEGER_LITERAL Statements "END"
+
+ID -> "A"
+ID -> "B"
+ID -> "C"
+ID -> "D"
+ID -> "E"
+ID -> "X"
+ID -> "Y"
+ID -> "I"`;
+
+    function tokenize(input) {
+      let tokens = [];
+      while (input.length > 0) {
+        let matched = false;
+        for (let pattern of tokenPatterns) {
+          const match = input.match(pattern.regex);
+          if (match) {
+            if (!pattern.ignore) {
+              tokens.push({ type: pattern.type, value: match[0] });
+            }
+            input = input.slice(match[0].length);
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          throw new Error("Unexpected token: " + input);
+        }
+      }
+      return tokens;
+    }
+
+    function displayTokens(tokens) {
+      let html = '<table><thead><tr><th>Type</th><th>Value</th></tr></thead><tbody>';
+      for (let token of tokens) {
+        html += `<tr><td>${token.type}</td><td>${token.value}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      document.getElementById("tokensOutput").innerHTML = html;
+    }
+
+    function compileCode() {
+      const input = document.getElementById("codeInput").value;
+      try {
+        const tokens = tokenize(input);
+        displayTokens(tokens);
+        document.getElementById("grammarOutput").textContent = grammarRules;
+      } catch (e) {
+        document.getElementById("tokensOutput").innerHTML = '<p style="color:red">' + e.message + '</p>';
+        document.getElementById("grammarOutput").textContent = '';
+      }
+    }
+
+    window.onload = () => {
+      const defaultCode = `BEGIN
+PRINT "HELLO"
+INTEGER A, B, C
+REAL D, E
+STRING X, Y
+A := 2
+B := 4
+C := 6
+D := -3.56E-8
+E := 4.567
+X := "text1"
+Y := "hello there"
+FOR I := 1 TO 5
+PRINT "Strings are [X] and [Y]"
+END
+END`;
+      document.getElementById("codeInput").value = defaultCode;
+      compileCode();
+    }
+  </script>
+</body>
+</html>
